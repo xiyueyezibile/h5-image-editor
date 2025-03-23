@@ -1,0 +1,75 @@
+.uploader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f5f5f5;
+}
+
+.uploaderContent {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.input {
+  display: none;
+}
+
+.label {
+  width: 80%;
+  max-width: 500px;
+  padding: 20px;
+  height: 200px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: #ffffff;
+}
+
+.label:hover {
+  border-color: #666;
+  background-color: #f8f8f8;
+}
+
+.content {
+  text-align: center;
+  color: #666;
+  user-select: none;
+}
+
+.icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.content p {
+  margin: 0;
+  font-size: 16px;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .label {
+    width: 90%;
+    height: 160px;
+  }
+
+  .icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+
+  .content p {
+    font-size: 14px;
+  }
+} 
