@@ -1,3 +1,12 @@
+/**
+ * ImageEditor 组件
+ * 基于react-konva实现的图片编辑器核心组件
+ * 功能包括：
+ * 1. 图片上传（背景图和图层）
+ * 2. 图层管理
+ * 3. 图片变换（移动、缩放、旋转）
+ * 4. 手势操作支持
+ */
 import React, { useState, useCallback, useRef } from 'react';
 import { Stage, Layer, Image, Transformer } from 'react-konva';
 import { ImageUploader } from './ImageUploader';
@@ -8,6 +17,10 @@ import useImage from 'use-image';
 import { useGesture } from '@use-gesture/react';
 import Konva from 'konva';
 
+/**
+ * 背景图层组件
+ * 负责渲染和管理编辑器的背景图片
+ */
 const BackgroundImageLayer: React.FC<{
   background: BackgroundImage;
   stageSize: { width: number; height: number };
@@ -36,6 +49,11 @@ const BackgroundImageLayer: React.FC<{
   );
 };
 
+/**
+ * 图片节点组件
+ * 处理单个图片图层的渲染和交互
+ * 支持拖拽、缩放、旋转等操作
+ */
 const ImageNode: React.FC<{
   element: ImageElement;
   isSelected: boolean;
@@ -46,6 +64,7 @@ const ImageNode: React.FC<{
   const imageRef = useRef<Konva.Image>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
 
+  // 当图层被选中时，显示变换控制器
   React.useEffect(() => {
     if (isSelected && imageRef.current && transformerRef.current) {
       transformerRef.current.nodes([imageRef.current]);
@@ -67,6 +86,7 @@ const ImageNode: React.FC<{
         onClick={onSelect}
         onTap={onSelect}
         onDragEnd={(e) => {
+          // 拖拽结束时更新位置
           onChange({
             position: {
               x: e.target.x(),
@@ -75,6 +95,7 @@ const ImageNode: React.FC<{
           });
         }}
         onTransformEnd={(e) => {
+          // 变换结束时更新大小和旋转角度
           const node = e.target;
           const scaleX = node.scaleX();
           const scaleY = node.scaleY();
@@ -99,6 +120,7 @@ const ImageNode: React.FC<{
         <Transformer
           ref={transformerRef}
           boundBoxFunc={(oldBox, newBox) => {
+            // 限制最小尺寸
             const minWidth = 5;
             const minHeight = 5;
             if (newBox.width < minWidth || newBox.height < minHeight) {
@@ -112,6 +134,7 @@ const ImageNode: React.FC<{
             'bottom-left',
             'bottom-right'
           ]}
+          // 设置旋转吸附角度
           rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
           rotationSnapTolerance={15}
         />
@@ -120,10 +143,15 @@ const ImageNode: React.FC<{
   );
 };
 
+/**
+ * 主编辑器组件
+ * 管理整个编辑器的状态和交互
+ */
 export const ImageEditor: React.FC<{ width: number; height: number }> = ({
   width,
   height,
 }) => {
+  // 状态管理
   const [background, setBackground] = useState<BackgroundImage | null>(null);
   const [elements, setElements] = useState<EditorElement[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -131,11 +159,12 @@ export const ImageEditor: React.FC<{ width: number; height: number }> = ({
   const stageRef = useRef<Konva.Stage>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // 手势控制（缩放）
   useGesture(
     {
       onPinch: ({ offset: [s], event }) => {
         event?.preventDefault();
-        const newScale = Math.min(Math.max(0.5, s), 3);
+        const newScale = Math.min(Math.max(0.5, s), 3); // 限制缩放范围
         setScale(newScale);
       },
     },
@@ -145,6 +174,7 @@ export const ImageEditor: React.FC<{ width: number; height: number }> = ({
     }
   );
 
+  // 处理图片上传
   const handleImageUpload = useCallback((file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -167,21 +197,22 @@ export const ImageEditor: React.FC<{ width: number; height: number }> = ({
         } else {
           // 否则添加为普通图层
           const aspectRatio = img.width / img.height;
-          const maxWidth = width * 0.5; // 减小默认尺寸
+          const maxWidth = width * 0.5; // 限制新添加图层的最大尺寸
           const maxHeight = height * 0.5;
           let newWidth = img.width;
           let newHeight = img.height;
 
+          // 保持宽高比例计算合适的尺寸
           if (newWidth > maxWidth) {
             newWidth = maxWidth;
             newHeight = newWidth / aspectRatio;
           }
-
           if (newHeight > maxHeight) {
             newHeight = maxHeight;
             newWidth = newHeight * aspectRatio;
           }
 
+          // 创建新的图层元素
           const newElement: ImageElement = {
             id: `image-${Date.now()}`,
             type: 'image',
@@ -204,6 +235,7 @@ export const ImageEditor: React.FC<{ width: number; height: number }> = ({
     reader.readAsDataURL(file);
   }, [width, height, background]);
 
+  // 更新图层属性
   const handleElementChange = useCallback((id: string, newAttrs: Partial<EditorElement>) => {
     setElements((prev) =>
       prev.map((elem) => {
@@ -219,6 +251,7 @@ export const ImageEditor: React.FC<{ width: number; height: number }> = ({
     );
   }, []);
 
+  // 处理画布空白处点击，取消选中状态
   const checkDeselect = useCallback((e: KonvaEventObject<MouseEvent | TouchEvent>) => {
     const clickedOnEmpty = e.target === e.target.getStage();
     if (clickedOnEmpty) {
@@ -248,15 +281,17 @@ export const ImageEditor: React.FC<{ width: number; height: number }> = ({
               />
             </Layer>
             <Layer>
-              {elements.map((elem) => {
-                if (elem.type === 'image') {
+              {elements.map((element) => {
+                if (element.type === 'image') {
                   return (
                     <ImageNode
-                      key={elem.id}
-                      element={elem}
-                      isSelected={elem.id === selectedId}
-                      onSelect={() => setSelectedId(elem.id)}
-                      onChange={(newAttrs) => handleElementChange(elem.id, newAttrs)}
+                      key={element.id}
+                      element={element as ImageElement}
+                      isSelected={selectedId === element.id}
+                      onSelect={() => setSelectedId(element.id)}
+                      onChange={(newAttrs) =>
+                        handleElementChange(element.id, newAttrs)
+                      }
                     />
                   );
                 }
