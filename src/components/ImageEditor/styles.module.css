@@ -1,0 +1,95 @@
+.editorContainer {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background-color: #f0f2f5;
+}
+
+.editorContent {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.uploadContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  background-color: #ffffff;
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  margin: 16px;
+  transition: all 0.3s;
+}
+
+.uploadContainer:hover {
+  border-color: #4096ff;
+}
+
+.uploadButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.uploadButton:hover {
+  color: #4096ff;
+}
+
+.uploadButton :global(.anticon) {
+  font-size: 32px;
+}
+
+.uploadButton span {
+  font-size: 14px;
+}
+
+.zoomIndicator {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* 适配移动端 */
+@media (max-width: 768px) {
+  .uploadContainer {
+    margin: 8px;
+    min-height: 150px;
+  }
+
+  .uploadButton {
+    padding: 12px;
+  }
+
+  .uploadButton :global(.anticon) {
+    font-size: 24px;
+  }
+
+  .uploadButton span {
+    font-size: 12px;
+  }
+
+  .zoomIndicator {
+    bottom: 12px;
+    right: 12px;
+    padding: 3px 6px;
+    font-size: 11px;
+  }
+} 

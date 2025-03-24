@@ -1,6 +1,9 @@
 .app {
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f0f2f5;
   position: relative;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: none;
@@ -15,4 +18,22 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
+}
+
+/* 为顶部物料栏和底部工具栏预留空间 */
+.app :global(.editorContainer) {
+  margin-top: 64px;
+  margin-bottom: 80px;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 适配移动端 */
+@media (max-width: 768px) {
+  .app :global(.editorContainer) {
+    margin-top: 48px;
+    margin-bottom: 64px;
+  }
 } 

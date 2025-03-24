@@ -7,22 +7,23 @@
  * 3. 图片变换（移动、缩放、旋转）
  * 4. 手势操作支持
  */
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Stage, Layer, Image, Transformer } from 'react-konva';
-import { ImageUploader } from './ImageUploader';
-import { EditorElement, ImageElement, BackgroundImage } from '../../types/editor';
-import styles from './index.module.css';
 import { KonvaEventObject } from 'konva/lib/Node';
-import useImage from 'use-image';
-import { useGesture } from '@use-gesture/react';
 import Konva from 'konva';
+import { useGesture } from '@use-gesture/react';
+import useImage from 'use-image';
+import { useEditorStore } from '../../store/editorStore';
+import styles from './index.module.css';
+import { ImageElement } from '../../types/editor';
+import { UploadOutlined } from '@ant-design/icons';
 
 /**
  * 背景图层组件
  * 负责渲染和管理编辑器的背景图片
  */
 const BackgroundImageLayer: React.FC<{
-  background: BackgroundImage;
+  background: { src: string; originalSize: { width: number; height: number } };
   stageSize: { width: number; height: number };
 }> = ({ background, stageSize }) => {
   const [image] = useImage(background.src);
@@ -52,17 +53,15 @@ const BackgroundImageLayer: React.FC<{
 /**
  * 图片节点组件
  * 处理单个图片图层的渲染和交互
- * 支持拖拽、缩放、旋转等操作
  */
 const ImageNode: React.FC<{
   element: ImageElement;
   isSelected: boolean;
-  onSelect: () => void;
-  onChange: (newAttrs: Partial<ImageElement>) => void;
-}> = ({ element, isSelected, onSelect, onChange }) => {
+}> = ({ element, isSelected }) => {
   const [image] = useImage(element.src);
   const imageRef = useRef<Konva.Image>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
+  const { setSelectedId, moveElement, resizeElement, rotateElement } = useEditorStore();
 
   // 当图层被选中时，显示变换控制器
   React.useEffect(() => {
@@ -83,19 +82,15 @@ const ImageNode: React.FC<{
         height={element.size.height}
         rotation={element.rotation}
         draggable
-        onClick={onSelect}
-        onTap={onSelect}
+        onClick={() => setSelectedId(element.id)}
+        onTap={() => setSelectedId(element.id)}
         onDragEnd={(e) => {
-          // 拖拽结束时更新位置
-          onChange({
-            position: {
-              x: e.target.x(),
-              y: e.target.y(),
-            },
+          moveElement(element.id, {
+            x: e.target.x(),
+            y: e.target.y(),
           });
         }}
         onTransformEnd={(e) => {
-          // 变换结束时更新大小和旋转角度
           const node = e.target;
           const scaleX = node.scaleX();
           const scaleY = node.scaleY();
@@ -103,24 +98,23 @@ const ImageNode: React.FC<{
           node.scaleX(1);
           node.scaleY(1);
 
-          onChange({
-            position: {
-              x: node.x(),
-              y: node.y(),
-            },
-            size: {
-              width: Math.max(5, node.width() * scaleX),
-              height: Math.max(5, node.height() * scaleY),
-            },
-            rotation: node.rotation(),
+          moveElement(element.id, {
+            x: node.x(),
+            y: node.y(),
           });
+
+          resizeElement(element.id, {
+            width: Math.max(5, node.width() * scaleX),
+            height: Math.max(5, node.height() * scaleY),
+          });
+
+          rotateElement(element.id, node.rotation());
         }}
       />
       {isSelected && (
         <Transformer
           ref={transformerRef}
           boundBoxFunc={(oldBox, newBox) => {
-            // 限制最小尺寸
             const minWidth = 5;
             const minHeight = 5;
             if (newBox.width < minWidth || newBox.height < minHeight) {
@@ -134,7 +128,6 @@ const ImageNode: React.FC<{
             'bottom-left',
             'bottom-right'
           ]}
-          // 设置旋转吸附角度
           rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
           rotationSnapTolerance={15}
         />
@@ -144,27 +137,83 @@ const ImageNode: React.FC<{
 };
 
 /**
+ * 上传底图组件
+ */
+const UploadBackground: React.FC<{
+  onImageUpload: (file: File) => void;
+}> = ({ onImageUpload }) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onImageUpload(file);
+    }
+  };
+
+  return (
+    <div className={styles.uploadContainer}>
+      <label className={styles.uploadButton}>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleChange}
+          style={{ display: 'none' }}
+        />
+        <UploadOutlined />
+        <span>点击上传底图</span>
+      </label>
+    </div>
+  );
+};
+
+/**
  * 主编辑器组件
- * 管理整个编辑器的状态和交互
  */
 export const ImageEditor: React.FC<{ width: number; height: number }> = ({
   width,
   height,
 }) => {
-  // 状态管理
-  const [background, setBackground] = useState<BackgroundImage | null>(null);
-  const [elements, setElements] = useState<EditorElement[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [scale, setScale] = useState(1);
+  const {
+    background,
+    elements,
+    selectedId,
+    scale,
+    setSelectedId,
+    setScale,
+    setBackground,
+  } = useEditorStore();
+
   const stageRef = useRef<Konva.Stage>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // 处理上传底图
+  const handleUploadBackground = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.src = e.target?.result as string;
+      img.onload = () => {
+        setBackground({
+          src: e.target?.result as string,
+          originalSize: {
+            width: img.width,
+            height: img.height,
+          },
+          size: {
+            width: img.width,
+            height: img.height,
+          },
+        });
+      };
+    };
+    reader.readAsDataURL(file);
+  };
 
   // 手势控制（缩放）
   useGesture(
     {
       onPinch: ({ offset: [s], event }) => {
         event?.preventDefault();
-        const newScale = Math.min(Math.max(0.5, s), 3); // 限制缩放范围
+        const newScale = Math.min(Math.max(0.5, s), 3);
         setScale(newScale);
       },
     },
@@ -174,96 +223,19 @@ export const ImageEditor: React.FC<{ width: number; height: number }> = ({
     }
   );
 
-  // 处理图片上传
-  const handleImageUpload = useCallback((file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new window.Image();
-      img.src = e.target?.result as string;
-      img.onload = () => {
-        if (!background) {
-          // 如果还没有底图，则设置为底图
-          setBackground({
-            src: e.target?.result as string,
-            originalSize: {
-              width: img.width,
-              height: img.height,
-            },
-            size: {
-              width: img.width,
-              height: img.height,
-            },
-          });
-        } else {
-          // 否则添加为普通图层
-          const aspectRatio = img.width / img.height;
-          const maxWidth = width * 0.5; // 限制新添加图层的最大尺寸
-          const maxHeight = height * 0.5;
-          let newWidth = img.width;
-          let newHeight = img.height;
-
-          // 保持宽高比例计算合适的尺寸
-          if (newWidth > maxWidth) {
-            newWidth = maxWidth;
-            newHeight = newWidth / aspectRatio;
-          }
-          if (newHeight > maxHeight) {
-            newHeight = maxHeight;
-            newWidth = newHeight * aspectRatio;
-          }
-
-          // 创建新的图层元素
-          const newElement: ImageElement = {
-            id: `image-${Date.now()}`,
-            type: 'image',
-            src: e.target?.result as string,
-            position: {
-              x: (width - newWidth) / 2,
-              y: (height - newHeight) / 2,
-            },
-            size: {
-              width: newWidth,
-              height: newHeight,
-            },
-            rotation: 0,
-          };
-
-          setElements((prev) => [...prev, newElement]);
-        }
-      };
-    };
-    reader.readAsDataURL(file);
-  }, [width, height, background]);
-
-  // 更新图层属性
-  const handleElementChange = useCallback((id: string, newAttrs: Partial<EditorElement>) => {
-    setElements((prev) =>
-      prev.map((elem) => {
-        if (elem.id === id) {
-          return {
-            ...elem,
-            ...newAttrs,
-            type: elem.type
-          } as EditorElement;
-        }
-        return elem;
-      })
-    );
-  }, []);
-
-  // 处理画布空白处点击，取消选中状态
-  const checkDeselect = useCallback((e: KonvaEventObject<MouseEvent | TouchEvent>) => {
+  // 处理画布空白处点击，取消选中
+  const checkDeselect = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
     const clickedOnEmpty = e.target === e.target.getStage();
     if (clickedOnEmpty) {
       setSelectedId(null);
     }
-  }, []);
+  };
 
   return (
     <div ref={containerRef} className={styles.editorContainer}>
       <div className={styles.editorContent}>
         {!background ? (
-          <ImageUploader onImageUpload={handleImageUpload} />
+          <UploadBackground onImageUpload={handleUploadBackground} />
         ) : (
           <Stage
             ref={stageRef}
@@ -288,10 +260,6 @@ export const ImageEditor: React.FC<{ width: number; height: number }> = ({
                       key={element.id}
                       element={element as ImageElement}
                       isSelected={selectedId === element.id}
-                      onSelect={() => setSelectedId(element.id)}
-                      onChange={(newAttrs) =>
-                        handleElementChange(element.id, newAttrs)
-                      }
                     />
                   );
                 }
@@ -302,14 +270,9 @@ export const ImageEditor: React.FC<{ width: number; height: number }> = ({
         )}
       </div>
       {background && (
-        <>
-          <div className={styles.uploadButton}>
-            <ImageUploader onImageUpload={handleImageUpload} />
-          </div>
-          <div className={styles.zoomIndicator}>
-            {Math.round(scale * 100)}%
-          </div>
-        </>
+        <div className={styles.zoomIndicator}>
+          {Math.round(scale * 100)}%
+        </div>
       )}
     </div>
   );
