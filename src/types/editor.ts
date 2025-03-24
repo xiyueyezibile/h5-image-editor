@@ -23,16 +23,58 @@ export interface Size {
 }
 
 /**
- * 图片元素接口
- * 表示编辑器中的图片图层
+ * 基础元素接口
+ * 所有可编辑元素的基础属性
  */
-export interface ImageElement {
-  id: string;           // 唯一标识符
-  type: 'image';       // 元素类型
-  src: string;         // 图片源地址
-  position: Position;  // 位置信息
-  size: Size;         // 尺寸信息
-  rotation: number;    // 旋转角度
+export interface BaseElement {
+  id: string;
+  type: string;
+  position: {
+    x: number;
+    y: number;
+  };
+  size: {
+    width: number;
+    height: number;
+  };
+  rotation: number;
+}
+
+/**
+ * 图片元素接口
+ */
+export interface ImageElement extends BaseElement {
+  type: 'image';
+  src: string;
+}
+
+/**
+ * 矩形元素接口
+ */
+export interface RectElement extends BaseElement {
+  type: 'rect';
+  style: {
+    fill: string;
+    stroke: string;
+    strokeWidth: number;
+  };
+}
+
+/**
+ * 编辑器元素类型
+ * 包含所有可用的元素类型
+ */
+export type EditorElement = ImageElement | RectElement;
+
+/**
+ * 背景图片接口
+ */
+export interface Background {
+  src: string;
+  originalSize: {
+    width: number;
+    height: number;
+  };
 }
 
 /**
@@ -66,12 +108,6 @@ export interface ShapeElement {
 }
 
 /**
- * 编辑器元素类型
- * 所有可能的图层类型的联合类型
- */
-export type EditorElement = ImageElement | TextElement | ShapeElement;
-
-/**
  * 编辑器状态接口
  * 表示编辑器的整体状态
  */
@@ -79,7 +115,7 @@ export interface EditorState {
   elements: EditorElement[];  // 所有图层元素
   selectedId: string | null;  // 当前选中的图层ID
   scale: number;             // 当前缩放比例
-} 
+}
 
 /**
  * 背景图片接口
