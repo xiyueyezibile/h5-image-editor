@@ -70,11 +70,11 @@ export interface RectElement extends BaseElement {
 export interface TextElement extends BaseElement {
   type: 'text';
   text: string;
-  fontSize: number;
-  fontFamily: string;
-  fill: string;
-  align: 'left' | 'center' | 'right';
-  verticalAlign: 'top' | 'middle' | 'bottom';
+  fontSize?: number;
+  fontFamily?: string;
+  fill?: string;
+  align?: 'left' | 'center' | 'right';
+  verticalAlign?: 'top' | 'middle' | 'bottom';
 }
 
 /**
@@ -93,7 +93,6 @@ export interface ShapeElement {
 }
 
 /**
- * 编辑器元素类型
  * 包含所有可用的元素类型
  */
 export type EditorElement = RectElement | ImageElement | TextElement;

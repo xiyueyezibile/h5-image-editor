@@ -7,13 +7,26 @@ import { useEditorStore } from '../../store/editorStore';
 interface TextNodeProps {
   element: TextElement;
   isSelected: boolean;
+  onSelect: () => void;
+  onChange: (newProps: {
+    text?: string;
+    position?: { x: number; y: number };
+    size?: { width: number; height: number };
+    rotation?: number;
+    scale?: number;
+  }) => void;
 }
 
 /**
  * 文字节点组件
  * 处理文字图层的渲染和交互
  */
-export const TextNode: React.FC<TextNodeProps> = ({ element, isSelected }) => {
+export const TextNode: React.FC<TextNodeProps> = ({
+  element,
+  isSelected,
+  onSelect,
+  onChange,
+}) => {
   const textRef = useRef<Konva.Text>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -45,51 +58,48 @@ export const TextNode: React.FC<TextNodeProps> = ({ element, isSelected }) => {
     setIsEditing(false);
   };
 
+  useEffect(() => {
+    if (isSelected && textRef.current) {
+      textRef.current.moveToTop();
+    }
+  }, [isSelected]);
+
   return (
     <>
       <Text
         ref={textRef}
+        id={element.id}
         x={element.position.x}
         y={element.position.y}
+        width={element.size.width}
+        height={element.size.height}
+        rotation={element.rotation}
+        scaleX={element.scale}
+        scaleY={element.scale}
         text={text}
         fontSize={element.fontSize}
         fontFamily={element.fontFamily}
         fill={element.fill}
         align={element.align}
         verticalAlign={element.verticalAlign}
-        width={element.size.width}
-        height={element.size.height}
-        rotation={element.rotation}
         opacity={element.opacity}
         draggable
-        onClick={() => setSelectedId(element.id)}
-        onTap={() => setSelectedId(element.id)}
+        onClick={onSelect}
+        onTap={onSelect}
         onDblClick={handleDblClick}
         onDragEnd={(e) => {
-          moveElement(element.id, {
-            x: e.target.x(),
-            y: e.target.y(),
+          onChange({
+            position: { x: e.target.x(), y: e.target.y() },
           });
         }}
         onTransformEnd={(e) => {
           const node = e.target;
-          const scaleX = node.scaleX();
-          const scaleY = node.scaleY();
-
-          node.scaleX(1);
-          node.scaleY(1);
-
-          moveElement(element.id, {
-            x: node.x(),
-            y: node.y(),
+          onChange({
+            position: { x: node.x(), y: node.y() },
+            size: { width: node.width(), height: node.height() },
+            rotation: node.rotation(),
+            scale: node.scaleX(),
           });
-
-          resizeElement(element.id, {
-            width: Math.max(5, node.width() * scaleX),
-            height: Math.max(5, node.height() * scaleY),
-          });
-
-          rotateElement(element.id, node.rotation());
         }}
       />
       {isEditing && (

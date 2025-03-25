@@ -3,39 +3,71 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: #fff;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  background: #fff;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
   z-index: 1000;
-  padding: 12px;
+  padding: 8px 16px;
 }
 
-.toolbarContent {
-  max-width: 800px;
-  margin: 0 auto;
+.primaryToolbar {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 24px;
+  padding: 8px 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+.primaryToolbar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.primaryToolbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.primaryToolbar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 2px;
+}
+
+.primaryToolbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.secondaryToolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
 }
 
 .controlGroup {
-  flex: 1;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 8px;
+  padding: 0 8px;
 }
 
 .controlLabel {
-  font-size: 14px;
   color: #666;
-  margin-bottom: 4px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .rotationSlider,
 .scaleSlider,
-.cornerRadiusSlider,
-.opacitySlider {
-  min-width: 120px;
-  margin: 0 12px;
+.opacitySlider,
+.fontSizeSlider,
+.cornerRadiusSlider {
+  width: 120px;
 }
 
 /* 移动端适配 */
@@ -44,20 +76,15 @@
     padding: 8px;
   }
 
-  .toolbarContent {
-    flex-direction: column;
-    gap: 16px;
-  }
-
   .controlGroup {
-    width: 100%;
+    padding: 0 4px;
   }
 
   .rotationSlider,
   .scaleSlider,
-  .cornerRadiusSlider,
-  .opacitySlider {
-    min-width: 100px;
-    margin: 0 8px;
+  .opacitySlider,
+  .fontSizeSlider,
+  .cornerRadiusSlider {
+    width: 100px;
   }
 } 

@@ -11,6 +11,7 @@ import BottomToolbar from './components/BottomToolbar';
 import MaterialBar from './components/MaterialBar';
 import styles from './App.module.css';
 import { useEditorStore } from './store/editorStore';
+import { TextElement, RectElement } from './types/editor';
 
 const App: React.FC = () => {
   const {
@@ -24,6 +25,10 @@ const App: React.FC = () => {
     deleteElement,
     rotateElement,
     scaleElement,
+    updateElementOpacity,
+    updateTextStyle,
+    updateRectCornerRadius,
+    updateRectStyle,
   } = useEditorStore();
 
   const [windowSize, setWindowSize] = useState({
@@ -127,10 +132,53 @@ const App: React.FC = () => {
             id: selectedObject.id,
             rotation: selectedObject.rotation,
             scale: selectedObject.scale,
+            opacity: selectedObject.opacity,
+            ...(selectedObject.type === 'text' && {
+              fontSize: (selectedObject as TextElement).fontSize,
+              fontFamily: (selectedObject as TextElement).fontFamily,
+              fill: (selectedObject as TextElement).fill,
+              align: (selectedObject as TextElement).align,
+              verticalAlign: (selectedObject as TextElement).verticalAlign,
+            }),
+            ...(selectedObject.type === 'rect' && {
+              cornerRadius: (selectedObject as RectElement).cornerRadius,
+              style: (selectedObject as RectElement).style,
+            }),
           }}
           onDelete={handleDelete}
           onRotate={handleRotate}
           onScale={handleScale}
+          onUpdateCornerRadius={(radius: number) => {
+            if (selectedId) {
+              updateRectCornerRadius(selectedId, radius);
+            }
+          }}
+          onUpdateFill={(color: string) => {
+            if (selectedId) {
+              updateRectStyle(selectedId, { fill: color });
+            }
+          }}
+          onUpdateStroke={(color: string) => {
+            if (selectedId) {
+              updateRectStyle(selectedId, { stroke: color });
+            }
+          }}
+          onUpdateOpacity={(opacity: number) => {
+            if (selectedId) {
+              updateElementOpacity(selectedId, opacity);
+            }
+          }}
+          onUpdateTextStyle={(style: {
+            fontSize?: number;
+            fontFamily?: string;
+            fill?: string;
+            align?: 'left' | 'center' | 'right';
+            verticalAlign?: 'top' | 'middle' | 'bottom';
+          }) => {
+            if (selectedId) {
+              updateTextStyle(selectedId, style);
+            }
+          }}
         />
       )}
     </div>

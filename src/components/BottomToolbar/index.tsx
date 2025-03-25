@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Slider, InputNumber, Button, Space, Tooltip, ColorPicker, Select } from 'antd';
 import {
   DeleteOutlined,
@@ -10,24 +10,23 @@ import {
 } from '@ant-design/icons';
 import styles from './styles.module.css';
 
-// 定义不同类型对象的操作选项接口
 interface ToolbarProps {
   selectedObject: {
-    type: 'image' | 'text' | 'shape' | 'rect' | null;
+    type: 'text' | 'image' | 'shape';
     id: string;
     rotation?: number;
     scale?: number;
-    cornerRadius?: number;
     opacity?: number;
     fontSize?: number;
     fontFamily?: string;
     fill?: string;
     align?: 'left' | 'center' | 'right';
     verticalAlign?: 'top' | 'middle' | 'bottom';
+    cornerRadius?: number;
     style?: {
-      fill?: string;
-      stroke?: string;
-      strokeWidth?: number;
+      fill: string;
+      stroke: string;
+      strokeWidth: number;
     };
   } | null;
   onDelete: () => void;
@@ -37,7 +36,13 @@ interface ToolbarProps {
   onUpdateFill?: (color: string) => void;
   onUpdateStroke?: (color: string) => void;
   onUpdateOpacity?: (opacity: number) => void;
-  onUpdateTextStyle?: (style: any) => void;
+  onUpdateTextStyle?: (style: {
+    fontSize?: number;
+    fontFamily?: string;
+    fill?: string;
+    align?: 'left' | 'center' | 'right';
+    verticalAlign?: 'top' | 'middle' | 'bottom';
+  }) => void;
 }
 
 const BottomToolbar: React.FC<ToolbarProps> = ({
@@ -62,7 +67,6 @@ const BottomToolbar: React.FC<ToolbarProps> = ({
   const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right'>('left');
   const [verticalAlign, setVerticalAlign] = useState<'top' | 'middle' | 'bottom'>('top');
 
-  // 同步外部传入的状态
   useEffect(() => {
     if (selectedObject) {
       setRotation(selectedObject.rotation || 0);
@@ -82,259 +86,287 @@ const BottomToolbar: React.FC<ToolbarProps> = ({
     }
   }, [selectedObject]);
 
+  const handleRotateChange = (value: number | null) => {
+    if (value !== null) {
+      setRotation(value);
+      onRotate(value);
+    }
+  };
+
+  const handleScaleChange = (value: number | null) => {
+    if (value !== null) {
+      setScale(value);
+      onScale({ x: value, y: value });
+    }
+  };
+
+  const handleOpacityChange = (value: number | null) => {
+    if (value !== null && onUpdateOpacity) {
+      onUpdateOpacity(value);
+    }
+  };
+
+  const handleCornerRadiusChange = (value: number | null) => {
+    if (value !== null && onUpdateCornerRadius) {
+      onUpdateCornerRadius(value);
+    }
+  };
+
+  const handleFillChange = (color: string) => {
+    if (onUpdateFill) {
+      onUpdateFill(color);
+    }
+  };
+
+  const handleStrokeChange = (color: string) => {
+    if (onUpdateStroke) {
+      onUpdateStroke(color);
+    }
+  };
+
+  const handleTextStyleChange = (style: {
+    fontSize?: number;
+    fontFamily?: string;
+    fill?: string;
+    align?: 'left' | 'center' | 'right';
+    verticalAlign?: 'top' | 'middle' | 'bottom';
+  }) => {
+    if (onUpdateTextStyle) {
+      onUpdateTextStyle(style);
+    }
+  };
+
   if (!selectedObject) return null;
 
-  // 处理旋转变化
-  const handleRotationChange = (value: number) => {
-    setRotation(value);
-    onRotate(value);
-  };
-
-  // 处理缩放变化
-  const handleScaleChange = (value: number) => {
-    setScale(value);
-    onScale({ x: value, y: value });
-  };
-
-  // 处理圆角变化
-  const handleCornerRadiusChange = (value: number) => {
-    setCornerRadius(value);
-    onUpdateCornerRadius && onUpdateCornerRadius(value);
-  };
-
-  // 处理透明度变化
-  const handleOpacityChange = (value: number) => {
-    setOpacity(value);
-    onUpdateOpacity && onUpdateOpacity(value);
-  };
-
-  // 处理填充颜色变化
-  const handleFillColorChange = (color: string) => {
-    setFillColor(color);
-    onUpdateFill && onUpdateFill(color);
-  };
-
-  // 处理边框颜色变化
-  const handleStrokeColorChange = (color: string) => {
-    setStrokeColor(color);
-    onUpdateStroke && onUpdateStroke(color);
-  };
-
-  // 快速旋转按钮
-  const handleQuickRotate = (angle: number) => {
-    const newRotation = (rotation + angle) % 360;
-    setRotation(newRotation);
-    onRotate(newRotation);
-  };
-
-  // 处理字体大小变化
-  const handleFontSizeChange = (value: number) => {
-    setFontSize(value);
-    onUpdateTextStyle && onUpdateTextStyle({ fontSize: value });
-  };
-
-  // 处理字体族变化
-  const handleFontFamilyChange = (value: string) => {
-    setFontFamily(value);
-    onUpdateTextStyle && onUpdateTextStyle({ fontFamily: value });
-  };
-
-  // 处理文本对齐方式变化
-  const handleTextAlignChange = (value: 'left' | 'center' | 'right') => {
-    setTextAlign(value);
-    onUpdateTextStyle && onUpdateTextStyle({ align: value });
-  };
-
-  // 处理垂直对齐方式变化
-  const handleVerticalAlignChange = (value: 'top' | 'middle' | 'bottom') => {
-    setVerticalAlign(value);
-    onUpdateTextStyle && onUpdateTextStyle({ verticalAlign: value });
-  };
-
-  const isRectangle = selectedObject.type === 'rect';
+  const isRectangle = selectedObject.type === 'shape';
   const isText = selectedObject.type === 'text';
 
   return (
     <div className={styles.toolbar}>
       <div className={styles.toolbarContent}>
-        {/* 旋转控制 */}
-        <div className={styles.controlGroup}>
-          <div className={styles.controlLabel}>旋转</div>
-          <Space>
-            <Button
-              icon={<RotateLeftOutlined />}
-              onClick={() => handleQuickRotate(-90)}
-            />
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          {/* 基础操作 */}
+          <Space className={styles.controlGroup}>
+            <Tooltip title="删除">
+              <Button
+                type="text"
+                icon={<DeleteOutlined />}
+                onClick={onDelete}
+                danger
+              />
+            </Tooltip>
+            <Tooltip title="向左旋转">
+              <Button
+                type="text"
+                icon={<RotateLeftOutlined />}
+                onClick={() => onRotate(rotation - 90)}
+              />
+            </Tooltip>
+            <Tooltip title="向右旋转">
+              <Button
+                type="text"
+                icon={<RotateRightOutlined />}
+                onClick={() => onRotate(rotation + 90)}
+              />
+            </Tooltip>
+            <Tooltip title="放大">
+              <Button
+                type="text"
+                icon={<ZoomInOutlined />}
+                onClick={() => handleScaleChange(scale + 0.1)}
+              />
+            </Tooltip>
+            <Tooltip title="缩小">
+              <Button
+                type="text"
+                icon={<ZoomOutOutlined />}
+                onClick={() => handleScaleChange(scale - 0.1)}
+              />
+            </Tooltip>
+          </Space>
+
+          {/* 旋转控制 */}
+          <div className={styles.controlGroup}>
+            <span>旋转角度：</span>
             <Slider
-              className={styles.rotationSlider}
               min={0}
               max={360}
               value={rotation}
-              onChange={handleRotationChange}
-              tooltip={{ formatter: (value) => `${value}°` }}
-            />
-            <Button
-              icon={<RotateRightOutlined />}
-              onClick={() => handleQuickRotate(90)}
+              onChange={handleRotateChange}
+              style={{ width: 200 }}
             />
             <InputNumber
               min={0}
               max={360}
               value={rotation}
-              onChange={(value) => handleRotationChange(value || 0)}
-              addonAfter="°"
+              onChange={handleRotateChange}
+              style={{ width: 80 }}
             />
-          </Space>
-        </div>
+          </div>
 
-        {/* 缩放控制 */}
-        <div className={styles.controlGroup}>
-          <div className={styles.controlLabel}>缩放</div>
-          <Space>
-            <Button
-              icon={<ZoomOutOutlined />}
-              onClick={() => handleScaleChange(Math.max(0.1, scale - 0.1))}
-            />
+          {/* 缩放控制 */}
+          <div className={styles.controlGroup}>
+            <span>缩放比例：</span>
             <Slider
-              className={styles.scaleSlider}
               min={0.1}
               max={3}
               step={0.1}
               value={scale}
               onChange={handleScaleChange}
-              tooltip={{ formatter: (value) => `${value ? (value * 100).toFixed(0) : 0}%` }}
-            />
-            <Button
-              icon={<ZoomInOutlined />}
-              onClick={() => handleScaleChange(Math.min(3, scale + 0.1))}
+              style={{ width: 200 }}
             />
             <InputNumber
-              min={10}
-              max={300}
-              value={Math.round(scale * 100)}
-              onChange={(value) => handleScaleChange((value || 100) / 100)}
-              addonAfter="%"
+              min={0.1}
+              max={3}
+              step={0.1}
+              value={scale}
+              onChange={handleScaleChange}
+              style={{ width: 80 }}
             />
-          </Space>
-        </div>
-        
-        {/* 透明度控制 - 对所有元素可用 */}
-        <div className={styles.controlGroup}>
-          <div className={styles.controlLabel}>透明度</div>
-          <Space>
+          </div>
+
+          {/* 透明度控制 */}
+          <div className={styles.controlGroup}>
+            <span>透明度：</span>
             <Slider
-              className={styles.opacitySlider}
               min={0}
               max={1}
-              step={0.01}
-              value={opacity}
+              step={0.1}
+              value={selectedObject.opacity || 1}
               onChange={handleOpacityChange}
-              tooltip={{ formatter: (value) => `${value ? Math.round(value * 100) : 0}%` }}
+              style={{ width: 200 }}
             />
             <InputNumber
               min={0}
-              max={100}
-              value={Math.round(opacity * 100)}
-              onChange={(value) => handleOpacityChange((value || 0) / 100)}
-              addonAfter="%"
+              max={1}
+              step={0.1}
+              value={selectedObject.opacity || 1}
+              onChange={handleOpacityChange}
+              style={{ width: 80 }}
             />
-          </Space>
-        </div>
+          </div>
 
-        {/* 文字控制 - 仅对文字元素显示 */}
-        {isText && (
-          <>
-            <div className={styles.controlGroup}>
-              <div className={styles.controlLabel}>字体大小</div>
-              <Space>
-                <Button
-                  icon={<FontSizeOutlined />}
-                  onClick={() => handleFontSizeChange(Math.max(8, fontSize - 2))}
-                />
+          {/* 矩形特有控制 */}
+          {isRectangle && (
+            <>
+              <div className={styles.controlGroup}>
+                <span>圆角：</span>
                 <Slider
-                  className={styles.fontSizeSlider}
-                  min={8}
-                  max={72}
-                  value={fontSize}
-                  onChange={handleFontSizeChange}
-                />
-                <Button
-                  icon={<FontSizeOutlined />}
-                  onClick={() => handleFontSizeChange(Math.min(72, fontSize + 2))}
+                  min={0}
+                  max={50}
+                  value={selectedObject.cornerRadius || 0}
+                  onChange={handleCornerRadiusChange}
+                  style={{ width: 200 }}
                 />
                 <InputNumber
-                  min={8}
-                  max={72}
-                  value={fontSize}
-                  onChange={(value) => handleFontSizeChange(value || 20)}
+                  min={0}
+                  max={50}
+                  value={selectedObject.cornerRadius || 0}
+                  onChange={handleCornerRadiusChange}
+                  style={{ width: 80 }}
                 />
-              </Space>
-            </div>
+              </div>
+              <div className={styles.controlGroup}>
+                <span>填充颜色：</span>
+                <input
+                  type="color"
+                  value={selectedObject.style?.fill || '#000000'}
+                  onChange={(e) => handleFillChange(e.target.value)}
+                />
+              </div>
+              <div className={styles.controlGroup}>
+                <span>边框颜色：</span>
+                <input
+                  type="color"
+                  value={selectedObject.style?.stroke || '#000000'}
+                  onChange={(e) => handleStrokeChange(e.target.value)}
+                />
+              </div>
+            </>
+          )}
 
-            <div className={styles.controlGroup}>
-              <div className={styles.controlLabel}>字体</div>
-              <Select
-                value={fontFamily}
-                onChange={handleFontFamilyChange}
-                style={{ width: 120 }}
-                options={[
-                  { label: 'Arial', value: 'Arial' },
-                  { label: 'Times New Roman', value: 'Times New Roman' },
-                  { label: '微软雅黑', value: 'Microsoft YaHei' },
-                ]}
-              />
-            </div>
-
-            <div className={styles.controlGroup}>
-              <div className={styles.controlLabel}>对齐方式</div>
-              <Select
-                value={textAlign}
-                onChange={handleTextAlignChange}
-                style={{ width: 100 }}
-                options={[
-                  { label: '左对齐', value: 'left' },
-                  { label: '居中', value: 'center' },
-                  { label: '右对齐', value: 'right' },
-                ]}
-              />
-            </div>
-
-            <div className={styles.controlGroup}>
-              <div className={styles.controlLabel}>垂直对齐</div>
-              <Select
-                value={verticalAlign}
-                onChange={handleVerticalAlignChange}
-                style={{ width: 100 }}
-                options={[
-                  { label: '顶部', value: 'top' },
-                  { label: '居中', value: 'middle' },
-                  { label: '底部', value: 'bottom' },
-                ]}
-              />
-            </div>
-
-            <div className={styles.controlGroup}>
-              <div className={styles.controlLabel}>文字颜色</div>
-              <ColorPicker
-                value={fillColor}
-                onChange={(color) => {
-                  setFillColor(color.toHexString());
-                  onUpdateTextStyle && onUpdateTextStyle({ fill: color.toHexString() });
-                }}
-              />
-            </div>
-          </>
-        )}
-
-        {/* 删除按钮 */}
-        <Tooltip title="删除">
-          <Button
-            type="primary"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={onDelete}
-          />
-        </Tooltip>
+          {/* 文字特有控制 */}
+          {isText && (
+            <>
+              <div className={styles.controlGroup}>
+                <span>字体大小：</span>
+                <Slider
+                  min={12}
+                  max={72}
+                  value={selectedObject.fontSize || 16}
+                  onChange={(value) =>
+                    handleTextStyleChange({ fontSize: value })
+                  }
+                  style={{ width: 200 }}
+                />
+                <InputNumber
+                  min={12}
+                  max={72}
+                  value={selectedObject.fontSize || 16}
+                  onChange={(value) =>
+                    handleTextStyleChange({ fontSize: value })
+                  }
+                  style={{ width: 80 }}
+                />
+              </div>
+              <div className={styles.controlGroup}>
+                <span>字体：</span>
+                <Select
+                  value={selectedObject.fontFamily || 'Arial'}
+                  onChange={(value) =>
+                    handleTextStyleChange({ fontFamily: value })
+                  }
+                  style={{ width: 120 }}
+                  options={[
+                    { label: 'Arial', value: 'Arial' },
+                    { label: 'Times New Roman', value: 'Times New Roman' },
+                    { label: '微软雅黑', value: 'Microsoft YaHei' },
+                  ]}
+                />
+              </div>
+              <div className={styles.controlGroup}>
+                <span>对齐方式：</span>
+                <Select
+                  value={selectedObject.align || 'left'}
+                  onChange={(value) =>
+                    handleTextStyleChange({ align: value as 'left' | 'center' | 'right' })
+                  }
+                  style={{ width: 100 }}
+                  options={[
+                    { label: '左对齐', value: 'left' },
+                    { label: '居中', value: 'center' },
+                    { label: '右对齐', value: 'right' },
+                  ]}
+                />
+              </div>
+              <div className={styles.controlGroup}>
+                <span>垂直对齐：</span>
+                <Select
+                  value={selectedObject.verticalAlign || 'top'}
+                  onChange={(value) =>
+                    handleTextStyleChange({ verticalAlign: value as 'top' | 'middle' | 'bottom' })
+                  }
+                  style={{ width: 100 }}
+                  options={[
+                    { label: '顶部', value: 'top' },
+                    { label: '居中', value: 'middle' },
+                    { label: '底部', value: 'bottom' },
+                  ]}
+                />
+              </div>
+              <div className={styles.controlGroup}>
+                <span>文字颜色：</span>
+                <input
+                  type="color"
+                  value={selectedObject.fill || '#000000'}
+                  onChange={(e) =>
+                    handleTextStyleChange({ fill: e.target.value })
+                  }
+                />
+              </div>
+            </>
+          )}
+        </Space>
       </div>
     </div>
   );
