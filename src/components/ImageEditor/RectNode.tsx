@@ -37,6 +37,8 @@ export const RectNode: React.FC<RectNodeProps> = ({ element, isSelected }) => {
         fill={element.style.fill}
         stroke={element.style.stroke}
         strokeWidth={element.style.strokeWidth}
+        cornerRadius={element.cornerRadius || 0}
+        opacity={element.opacity || 1}
         rotation={element.rotation}
         draggable
         onClick={() => setSelectedId(element.id)}

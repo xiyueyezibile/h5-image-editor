@@ -8,17 +8,19 @@
  * 4. 手势操作支持
  */
 import React, { useRef, useEffect } from 'react';
-import { Stage, Layer, Image, Rect, Transformer } from 'react-konva';
+import { Stage, Layer, Image, Rect, Transformer, Text } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import Konva from 'konva';
 import { useGesture } from '@use-gesture/react';
 import { useEditorStore } from '../../store/editorStore';
-import { ImageElement, RectElement } from '../../types/editor';
+import { ImageElement, RectElement, TextElement } from '../../types/editor';
 import styles from './styles.module.css';
 import { BackgroundLayer } from './BackgroundLayer';
 import { ImageNode } from './ImageNode';
 import { RectNode } from './RectNode';
+import { TextNode } from './TextNode';
 import { UploadArea } from './UploadArea';
+import BottomToolbar from '../BottomToolbar';
 
 interface ImageEditorProps {
   width: number;
@@ -45,6 +47,12 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
     resizeElement,
     rotateElement,
     scaleElement,
+    deleteElement,
+    updateRectStyle,
+    updateRectCornerRadius,
+    updateElementOpacity,
+    updateTextContent,
+    updateTextStyle,
   } = useEditorStore();
 
   const stageRef = useRef<Konva.Stage>(null);
@@ -83,6 +91,55 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
     const clickedOnEmpty = e.target === e.target.getStage();
     if (clickedOnEmpty) {
       setSelectedId(null);
+    }
+  };
+
+  // 工具栏操作处理
+  const handleDelete = () => {
+    if (selectedId) {
+      deleteElement(selectedId);
+    }
+  };
+
+  const handleRotate = (angle: number) => {
+    if (selectedId) {
+      rotateElement(selectedId, angle);
+    }
+  };
+
+  const handleScale = (scaleValue: { x: number; y: number }) => {
+    if (selectedId) {
+      scaleElement(selectedId, scaleValue.x);
+    }
+  };
+
+  const handleUpdateCornerRadius = (radius: number) => {
+    if (selectedId) {
+      updateRectCornerRadius(selectedId, radius);
+    }
+  };
+
+  const handleUpdateFill = (color: string) => {
+    if (selectedId) {
+      updateRectStyle(selectedId, { fill: color });
+    }
+  };
+
+  const handleUpdateStroke = (color: string) => {
+    if (selectedId) {
+      updateRectStyle(selectedId, { stroke: color });
+    }
+  };
+  
+  const handleUpdateOpacity = (opacity: number) => {
+    if (selectedId) {
+      updateElementOpacity(selectedId, opacity);
+    }
+  };
+
+  const handleUpdateTextStyle = (style: Partial<TextElement>) => {
+    if (selectedId) {
+      updateTextStyle(selectedId, style);
     }
   };
 
@@ -126,6 +183,9 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
   const backgroundImage = new window.Image();
   backgroundImage.src = background.src;
   
+  // 获取选中的元素
+  const selectedElement = elements.find((elem) => elem.id === selectedId) || null;
+
   return (
     <div ref={containerRef} className={styles.editorContainer}>
       <div className={styles.editorContent}>
@@ -133,8 +193,11 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
           ref={stageRef}
           width={stageWidth}
           height={stageHeight}
-          onMouseDown={checkDeselect}
-          onTouchStart={checkDeselect}
+          scale={{ x: scale, y: scale }}
+          x={0}
+          y={0}
+          onClick={checkDeselect}
+          onTap={checkDeselect}
         >
           <Layer>
             {/* 背景图层 */}
@@ -147,132 +210,46 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
             />
 
             {/* 元素图层 */}
-            {elements.map((elem) => {
-              if (elem.type === 'rect') {
+            {elements.map((element) => {
+              if (element.type === 'image') {
                 return (
-                  <Rect
-                    key={elem.id}
-                    id={elem.id}
-                    x={elem.position.x * scale + centerX}
-                    y={elem.position.y * scale + centerY}
-                    width={elem.size.width * elem.scale * scale}
-                    height={elem.size.height * elem.scale * scale}
-                    rotation={elem.rotation}
-                    fill={elem.style.fill}
-                    stroke={elem.style.stroke}
-                    strokeWidth={elem.style.strokeWidth}
-                    draggable
-                    onClick={(e) => {
-                      e.cancelBubble = true;
-                      setSelectedId(elem.id);
-                    }}
-                    onTap={(e) => {
-                      e.cancelBubble = true;
-                      setSelectedId(elem.id);
-                    }}
-                    onDragStart={(e) => {
-                      e.cancelBubble = true;
-                      setSelectedId(elem.id);
-                    }}
-                    onDragEnd={(e) => {
-                      const pos = {
-                        x: (e.target.x() - centerX) / scale,
-                        y: (e.target.y() - centerY) / scale,
-                      };
-                      moveElement(elem.id, pos);
-                    }}
-                    onTransformStart={(e) => {
-                      e.cancelBubble = true;
-                      const node = e.target;
-                      node.setAttrs({
-                        width: node.width() * node.scaleX(),
-                        height: node.height() * node.scaleY(),
-                        scaleX: 1,
-                        scaleY: 1,
-                      });
-                    }}
-                    onTransformEnd={(e) => {
-                      const node = e.target;
-                      const rotation = node.rotation();
-                      const width = node.width() * node.scaleX();
-                      const height = node.height() * node.scaleY();
-                      const newScale = Math.sqrt((width * width + height * height) / 
-                        (elem.size.width * elem.size.width + elem.size.height * elem.size.height)) / scale;
-                      
-                      node.setAttrs({
-                        rotation,
-                        width: elem.size.width * scale * newScale,
-                        height: elem.size.height * scale * newScale,
-                        scaleX: 1,
-                        scaleY: 1,
-                      });
-
-                      scaleElement(elem.id, elem.scale * newScale);
-                      rotateElement(elem.id, rotation);
-                    }}
+                  <ImageNode
+                    key={element.id}
+                    element={element}
+                    isSelected={element.id === selectedId}
                   />
                 );
-              } else if (elem.type === 'image') {
-                const imageObj = new window.Image();
-                imageObj.src = elem.src;
+              } else if (element.type === 'rect') {
                 return (
-                  <Image
-                    key={elem.id}
-                    id={elem.id}
-                    image={imageObj}
-                    x={elem.position.x * scale + centerX}
-                    y={elem.position.y * scale + centerY}
-                    width={elem.size.width * elem.scale * scale}
-                    height={elem.size.height * elem.scale * scale}
-                    rotation={elem.rotation}
-                    draggable
-                    onClick={(e) => {
-                      e.cancelBubble = true;
-                      setSelectedId(elem.id);
-                    }}
-                    onTap={(e) => {
-                      e.cancelBubble = true;
-                      setSelectedId(elem.id);
-                    }}
-                    onDragStart={(e) => {
-                      e.cancelBubble = true;
-                      setSelectedId(elem.id);
-                    }}
-                    onDragEnd={(e) => {
-                      const pos = {
-                        x: (e.target.x() - centerX) / scale,
-                        y: (e.target.y() - centerY) / scale,
-                      };
-                      moveElement(elem.id, pos);
-                    }}
-                    onTransformStart={(e) => {
-                      e.cancelBubble = true;
-                      const node = e.target;
-                      node.setAttrs({
-                        width: node.width() * node.scaleX(),
-                        height: node.height() * node.scaleY(),
-                        scaleX: 1,
-                        scaleY: 1,
-                      });
-                    }}
-                    onTransformEnd={(e) => {
-                      const node = e.target;
-                      const rotation = node.rotation();
-                      const width = node.width() * node.scaleX();
-                      const height = node.height() * node.scaleY();
-                      const newScale = Math.sqrt((width * width + height * height) / 
-                        (elem.size.width * elem.size.width + elem.size.height * elem.size.height)) / scale;
-                      
-                      node.setAttrs({
-                        rotation,
-                        width: elem.size.width * scale * newScale,
-                        height: elem.size.height * scale * newScale,
-                        scaleX: 1,
-                        scaleY: 1,
-                      });
-
-                      scaleElement(elem.id, elem.scale * newScale);
-                      rotateElement(elem.id, rotation);
+                  <RectNode
+                    key={element.id}
+                    element={element}
+                    isSelected={element.id === selectedId}
+                  />
+                );
+              } else if (element.type === 'text') {
+                return (
+                  <TextNode
+                    key={element.id}
+                    element={element}
+                    isSelected={element.id === selectedId}
+                    onSelect={() => setSelectedId(element.id)}
+                    onChange={(newProps) => {
+                      if (newProps.text !== undefined) {
+                        updateTextContent(element.id, newProps.text);
+                      }
+                      if (newProps.position) {
+                        moveElement(element.id, newProps.position);
+                      }
+                      if (newProps.size) {
+                        resizeElement(element.id, newProps.size);
+                      }
+                      if (newProps.rotation !== undefined) {
+                        rotateElement(element.id, newProps.rotation);
+                      }
+                      if (newProps.scale !== undefined) {
+                        scaleElement(element.id, newProps.scale);
+                      }
                     }}
                   />
                 );
@@ -285,7 +262,6 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
               <Transformer
                 ref={transformerRef}
                 boundBoxFunc={(oldBox, newBox) => {
-                  // 限制最小尺寸
                   const minSize = 5;
                   if (newBox.width < minSize || newBox.height < minSize) {
                     return oldBox;
@@ -310,6 +286,36 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({
           {Math.round(scale * 100)}%
         </div>
       )}
+
+      {/* 底部工具栏 */}
+      <BottomToolbar
+        selectedObject={
+          selectedElement
+            ? {
+                id: selectedElement.id,
+                type: selectedElement.type,
+                rotation: selectedElement.rotation,
+                scale: selectedElement.scale,
+                opacity: (selectedElement as any).opacity || 1,
+                cornerRadius: selectedElement.type === 'rect' ? (selectedElement as RectElement).cornerRadius : undefined,
+                style: selectedElement.type === 'rect' ? (selectedElement as RectElement).style : undefined,
+                fontSize: selectedElement.type === 'text' ? (selectedElement as TextElement).fontSize : undefined,
+                fontFamily: selectedElement.type === 'text' ? (selectedElement as TextElement).fontFamily : undefined,
+                fill: selectedElement.type === 'text' ? (selectedElement as TextElement).fill : undefined,
+                align: selectedElement.type === 'text' ? (selectedElement as TextElement).align : undefined,
+                verticalAlign: selectedElement.type === 'text' ? (selectedElement as TextElement).verticalAlign : undefined,
+              }
+            : null
+        }
+        onDelete={handleDelete}
+        onRotate={handleRotate}
+        onScale={handleScale}
+        onUpdateCornerRadius={handleUpdateCornerRadius}
+        onUpdateFill={handleUpdateFill}
+        onUpdateStroke={handleUpdateStroke}
+        onUpdateOpacity={handleUpdateOpacity}
+        onUpdateTextStyle={handleUpdateTextStyle}
+      />
     </div>
   );
 }; 

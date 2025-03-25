@@ -39,6 +39,7 @@ export interface BaseElement {
   };
   rotation: number;
   scale: number; // 添加元素级别的缩放
+  opacity?: number; // 透明度 0-1之间
 }
 
 /**
@@ -54,6 +55,7 @@ export interface ImageElement extends BaseElement {
  */
 export interface RectElement extends BaseElement {
   type: 'rect';
+  cornerRadius?: number; // 矩形圆角半径
   style: {
     fill: string;
     stroke: string;
@@ -62,35 +64,17 @@ export interface RectElement extends BaseElement {
 }
 
 /**
- * 编辑器元素类型
- * 包含所有可用的元素类型
- */
-export type EditorElement = RectElement | ImageElement;
-
-/**
- * 背景图片接口
- */
-export interface Background {
-  src: string;
-  originalSize: {
-    width: number;
-    height: number;
-  };
-}
-
-/**
  * 文本元素接口
  * 表示编辑器中的文本图层
  */
-export interface TextElement {
-  id: string;           // 唯一标识符
-  type: 'text';        // 元素类型
-  text: string;        // 文本内容
-  position: Position;  // 位置信息
-  fontSize: number;    // 字体大小
-  fontFamily: string;  // 字体族
-  fill: string;       // 填充颜色
-  rotation: number;    // 旋转角度
+export interface TextElement extends BaseElement {
+  type: 'text';
+  text: string;
+  fontSize: number;
+  fontFamily: string;
+  fill: string;
+  align: 'left' | 'center' | 'right';
+  verticalAlign: 'top' | 'middle' | 'bottom';
 }
 
 /**
@@ -106,6 +90,23 @@ export interface ShapeElement {
   stroke: string;                  // 边框颜色
   strokeWidth: number;             // 边框宽度
   rotation: number;                // 旋转角度
+}
+
+/**
+ * 编辑器元素类型
+ * 包含所有可用的元素类型
+ */
+export type EditorElement = RectElement | ImageElement | TextElement;
+
+/**
+ * 背景图片接口
+ */
+export interface Background {
+  src: string;
+  originalSize: {
+    width: number;
+    height: number;
+  };
 }
 
 /**

@@ -14,19 +14,15 @@ import { useEditorStore } from './store/editorStore';
 
 const App: React.FC = () => {
   const {
+    background,
     selectedId,
     elements,
-    background,
-    scale,
-    setBackgroundImage,
+    addTextElement,
     addRectElement,
     addImageElement,
-    setSelectedId,
-    moveElement,
-    resizeElement,
-    rotateElement,
+    setBackgroundImage,
     deleteElement,
-    setScale,
+    rotateElement,
     scaleElement,
   } = useEditorStore();
 
@@ -34,6 +30,7 @@ const App: React.FC = () => {
     width: window.innerWidth,
     height: window.innerHeight,
   });
+  const [scale, setScale] = useState(1);
 
   // 监听窗口大小变化
   useEffect(() => {
@@ -49,9 +46,7 @@ const App: React.FC = () => {
   }, []);
 
   // 获取当前选中的对象
-  const selectedObject = selectedId
-    ? elements.find((elem) => elem.id === selectedId)
-    : null;
+  const selectedObject = elements.find((elem) => elem.id === selectedId) || null;
 
   // 处理删除操作
   const handleDelete = () => {
@@ -68,20 +63,15 @@ const App: React.FC = () => {
   };
 
   // 处理缩放操作
-  const handleScale = (newScale: { x: number; y: number }) => {
+  const handleScale = (scaleValue: { x: number; y: number }) => {
     if (selectedId) {
-      const selectedElement = elements.find((elem) => elem.id === selectedId);
-      if (selectedElement) {
-        // 更新元素的缩放
-        scaleElement(selectedId, newScale.x);
-      }
+      scaleElement(selectedId, scaleValue.x);
     }
   };
 
   // 处理添加文字
   const handleAddText = () => {
-    // TODO: 实现添加文字功能
-    console.log('添加文字功能待实现');
+    addTextElement();
   };
 
   // 处理添加矩形
@@ -133,7 +123,7 @@ const App: React.FC = () => {
       {selectedObject && (
         <BottomToolbar
           selectedObject={{
-            type: selectedObject.type === 'rect' ? 'shape' : 'image',
+            type: selectedObject.type === 'rect' ? 'shape' : selectedObject.type,
             id: selectedObject.id,
             rotation: selectedObject.rotation,
             scale: selectedObject.scale,

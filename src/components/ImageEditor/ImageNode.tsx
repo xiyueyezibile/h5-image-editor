@@ -38,6 +38,7 @@ export const ImageNode: React.FC<ImageNodeProps> = ({ element, isSelected }) => 
         width={element.size.width}
         height={element.size.height}
         rotation={element.rotation}
+        opacity={element.opacity || 1}
         draggable
         onClick={() => setSelectedId(element.id)}
         onTap={() => setSelectedId(element.id)}
