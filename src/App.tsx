@@ -17,6 +17,7 @@ const App: React.FC = () => {
     selectedId,
     elements,
     background,
+    scale,
     setBackgroundImage,
     addRectElement,
     addImageElement,
@@ -24,6 +25,9 @@ const App: React.FC = () => {
     moveElement,
     resizeElement,
     rotateElement,
+    deleteElement,
+    setScale,
+    scaleElement,
   } = useEditorStore();
 
   const [windowSize, setWindowSize] = useState({
@@ -52,34 +56,24 @@ const App: React.FC = () => {
   // 处理删除操作
   const handleDelete = () => {
     if (selectedId) {
-      setSelectedId(null);
-      // 从 elements 数组中过滤掉被删除的元素
-      const newElements = elements.filter(elem => elem.id !== selectedId);
-      // 更新 store 中的 elements
-      // 注意：这里需要添加一个新的 action 到 store 中
-      // TODO: 添加 deleteElement action
+      deleteElement(selectedId);
     }
   };
 
   // 处理旋转操作
   const handleRotate = (angle: number) => {
     if (selectedId) {
-      const selectedElement = elements.find((elem) => elem.id === selectedId);
-      if (selectedElement) {
-        rotateElement(selectedId, (selectedElement.rotation || 0) + angle);
-      }
+      rotateElement(selectedId, angle);
     }
   };
 
   // 处理缩放操作
-  const handleScale = (scale: { x: number; y: number }) => {
+  const handleScale = (newScale: { x: number; y: number }) => {
     if (selectedId) {
       const selectedElement = elements.find((elem) => elem.id === selectedId);
       if (selectedElement) {
-        resizeElement(selectedId, {
-          width: selectedElement.size.width * scale.x,
-          height: selectedElement.size.height * scale.y,
-        });
+        // 更新元素的缩放
+        scaleElement(selectedId, newScale.x);
       }
     }
   };
@@ -102,9 +96,15 @@ const App: React.FC = () => {
       const img = new Image();
       img.onload = () => {
         if (!background) {
+          // 设置背景图片，直接使用原始尺寸，由 ImageEditor 组件负责适配
           setBackgroundImage(img.src, img.width, img.height);
         } else {
-          addImageElement(img.src, img.width, img.height);
+          // 添加图片图层，计算合适的初始位置和大小
+          const maxSize = Math.min(windowSize.width, windowSize.height) * 0.3; // 设置为视图大小的 30%
+          const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+          const width = img.width * ratio;
+          const height = img.height * ratio;
+          addImageElement(img.src, width, height);
         }
       };
       img.src = e.target?.result as string;
@@ -127,6 +127,7 @@ const App: React.FC = () => {
         width={windowSize.width}
         height={windowSize.height}
         onUpload={handleUpload}
+        scale={scale}
       />
       {/* 渲染底部工具栏 */}
       {selectedObject && (
@@ -134,6 +135,8 @@ const App: React.FC = () => {
           selectedObject={{
             type: selectedObject.type === 'rect' ? 'shape' : 'image',
             id: selectedObject.id,
+            rotation: selectedObject.rotation,
+            scale: selectedObject.scale,
           }}
           onDelete={handleDelete}
           onRotate={handleRotate}

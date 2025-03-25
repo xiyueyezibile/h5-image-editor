@@ -38,6 +38,7 @@ export interface BaseElement {
     height: number;
   };
   rotation: number;
+  scale: number; // 添加元素级别的缩放
 }
 
 /**
@@ -64,7 +65,7 @@ export interface RectElement extends BaseElement {
  * 编辑器元素类型
  * 包含所有可用的元素类型
  */
-export type EditorElement = ImageElement | RectElement;
+export type EditorElement = RectElement | ImageElement;
 
 /**
  * 背景图片接口

@@ -2,17 +2,19 @@ import { create } from 'zustand';
 import { Background, ImageElement, RectElement, EditorElement } from '../types/editor';
 
 interface EditorState {
-  background: Background | null;
-  elements: EditorElement[];
-  selectedId: string | null;
-  scale: number;
-  setBackgroundImage: (src: string, width: number, height: number) => void;
-  addImageElement: (src: string, width: number, height: number) => void;
-  addRectElement: () => void;
-  setSelectedId: (id: string | null) => void;
-  moveElement: (id: string, position: { x: number; y: number }) => void;
-  resizeElement: (id: string, size: { width: number; height: number }) => void;
-  rotateElement: (id: string, rotation: number) => void;
+  background: Background | null; // 背景图
+  elements: EditorElement[]; // 元素列表
+  selectedId: string | null; // 选中的元素id
+  scale: number; // 缩放比例
+  setBackgroundImage: (src: string, width: number, height: number) => void; // 设置背景图
+  addImageElement: (src: string, width: number, height: number) => void; // 添加图片元素
+  addRectElement: () => void; // 添加矩形元素
+  deleteElement: (id: string) => void; // 删除元素
+  setSelectedId: (id: string | null) => void; // 设置选中的元素id
+  moveElement: (id: string, position: { x: number; y: number }) => void; // 移动元素
+  resizeElement: (id: string, size: { width: number; height: number }) => void; // 调整元素大小
+  rotateElement: (id: string, rotation: number) => void; // 旋转元素
+  scaleElement: (id: string, scale: number) => void; // 缩放元素
   setScale: (scale: number) => void;
 }
 
@@ -26,32 +28,39 @@ export const useEditorStore = create<EditorState>((set) => ({
     set({ background: { src, originalSize: { width, height } } }),
 
   addImageElement: (src, width, height) =>
-    set((state) => ({
-      elements: [
-        ...state.elements,
-        {
-          id: `image-${Date.now()}`,
-          type: 'image',
-          src,
-          position: { x: 0, y: 0 },
-          size: { width, height },
-          rotation: 0,
-        } as ImageElement,
-      ],
-    })),
+    set((state) => {
+      const id = `image-${Date.now()}`;
+      return {
+        elements: [
+          ...state.elements,
+          {
+            id,
+            type: 'image',
+            src,
+            position: { x: 50, y: 50 },
+            size: { width, height },
+            rotation: 0,
+            scale: 1,
+          } as ImageElement,
+        ],
+        selectedId: id,
+      };
+    }),
 
   addRectElement: () =>
     set((state) => {
       const id = `rect-${Date.now()}`;
+      const defaultSize = 100;
       return {
         elements: [
           ...state.elements,
           {
             id,
             type: 'rect',
-            position: { x: 100, y: 100 },
-            size: { width: 100, height: 100 },
+            position: { x: 0, y: 0 },
+            size: { width: defaultSize, height: defaultSize },
             rotation: 0,
+            scale: 1,
             style: {
               fill: '#ffffff',
               stroke: '#1890ff',
@@ -63,13 +72,10 @@ export const useEditorStore = create<EditorState>((set) => ({
       };
     }),
 
-  setSelectedId: (id) => set({ selectedId: id }),
-
-  moveElement: (id, position) =>
+  deleteElement: (id) =>
     set((state) => ({
-      elements: state.elements.map((el) =>
-        el.id === id ? { ...el, position } : el
-      ),
+      elements: state.elements.filter((elem) => elem.id !== id),
+      selectedId: state.selectedId === id ? null : state.selectedId,
     })),
 
   resizeElement: (id, size) =>
@@ -82,9 +88,25 @@ export const useEditorStore = create<EditorState>((set) => ({
   rotateElement: (id, rotation) =>
     set((state) => ({
       elements: state.elements.map((el) =>
-        el.id === id ? { ...el, rotation } : el
+        el.id === id ? { ...el, rotation: rotation % 360 } : el
+      ),
+    })),
+
+  scaleElement: (id, scale) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, scale } : el
       ),
     })),
 
   setScale: (scale) => set({ scale }),
+
+  setSelectedId: (id) => set({ selectedId: id }),
+
+  moveElement: (id, position) =>
+    set((state) => ({
+      elements: state.elements.map((el) =>
+        el.id === id ? { ...el, position } : el
+      ),
+    })),
 })); 
